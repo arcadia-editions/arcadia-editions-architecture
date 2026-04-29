@@ -1,0 +1,175 @@
+config:
+  title: "Arcadia Editions — Event-Driven Retail Architecture"
+  version: 0.0.1
+  properties:
+    root: ..   # resolved relative to the location of this file
+
+domains:
+  "catalog":
+    id: "catalog"
+    name: "Catalog & Inventory"
+    description: "Product catalog, limited editions, inventory and drop management"
+    subdomains:
+      "catalog-management":
+        id: "catalog.catalog-management"
+        name: "Catalog Management"
+        description: "Product catalog, limited edition drop scheduling and stock reservations"
+        services:
+          "catalog-products":
+            id: "catalog.catalog-management.catalog-products"
+            version: "1.0.0"
+            name: "Catalog Products"
+            description: "Manages product catalog, limited edition drops, and stock reservations"
+            repository: "{{root}}/catalog-products-api"
+            docs:
+              summary: SUMMARY.md
+              content: EVENT_CATALOG.md
+              changelog: CHANGELOG.md
+            specs:
+              - type: zdl
+                path: "domain-model.zdl"
+              - type: asyncapi
+                path: "asyncapi.yml"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
+              - type: openapi
+                path: "openapi.yml"
+            consumers:
+              - $ref: "#/domains/orders/subdomains/checkout/services/orders-checkout"
+
+  "orders":
+    id: "orders"
+    name: "Orders"
+    description: "Cart, checkout and order lifecycle management"
+    subdomains:
+      "checkout":
+        id: "orders.checkout"
+        name: "Checkout"
+        description: "Shopping cart, checkout process and order lifecycle"
+        services:
+          "orders-checkout":
+            id: "orders.checkout.orders-checkout"
+            version: "1.0.0"
+            name: "Orders Checkout"
+            description: "Handles cart, checkout, order placement and order lifecycle events"
+            repository: "{{root}}/orders-checkout-api"
+            docs:
+              summary: SUMMARY.md
+              content: EVENT_CATALOG.md
+              changelog: CHANGELOG.md
+            specs:
+              - type: zdl
+                path: "domain-model.zdl"
+              - type: asyncapi
+                path: "asyncapi.yml"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
+              - type: openapi
+                path: "openapi.yml"
+            consumers:
+              - $ref: "#/domains/catalog/subdomains/catalog-management/services/catalog-products"
+              - $ref: "#/domains/payments/subdomains/processing/services/payments-processing"
+
+  "payments":
+    id: "payments"
+    name: "Payments"
+    description: "Payment authorization, failure handling and refunds"
+    subdomains:
+      "processing":
+        id: "payments.processing"
+        name: "Processing"
+        description: "Payment authorization, failure management and refund processing"
+        services:
+          "payments-processing":
+            id: "payments.processing.payments-processing"
+            version: "1.0.0"
+            name: "Payments Processing"
+            description: "Authorizes payments, handles declines and manages refunds"
+            repository: "{{root}}/payments-processing-api"
+            docs:
+              summary: SUMMARY.md
+              content: EVENT_CATALOG.md
+              changelog: CHANGELOG.md
+            specs:
+              - type: zdl
+                path: "domain-model.zdl"
+              - type: asyncapi
+                path: "asyncapi.yml"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
+            consumers:
+              - $ref: "#/domains/orders/subdomains/checkout/services/orders-checkout"
+
+  "fulfillment":
+    id: "fulfillment"
+    name: "Fulfillment"
+    description: "Order fulfillment, shipping and delivery tracking"
+    subdomains:
+      "shipping":
+        id: "fulfillment.shipping"
+        name: "Shipping"
+        description: "Picking, packing, shipping and delivery tracking"
+        services:
+          "fulfillment-shipping":
+            id: "fulfillment.shipping.fulfillment-shipping"
+            version: "1.0.0"
+            name: "Fulfillment Shipping"
+            description: "Manages order fulfillment pipeline from picking to delivery tracking"
+            repository: "{{root}}/fulfillment-shipping-api"
+            docs:
+              summary: SUMMARY.md
+              content: EVENT_CATALOG.md
+              changelog: CHANGELOG.md
+            specs:
+              - type: zdl
+                path: "domain-model.zdl"
+              - type: asyncapi
+                path: "asyncapi.yml"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
+            consumers:
+              - $ref: "#/domains/orders/subdomains/checkout/services/orders-checkout"
+
+  "notifications":
+    id: "notifications"
+    name: "Notifications"
+    description: "Email, SMS and push notifications — pure consumer, reacts to events from all domains"
+    subdomains:
+      "consumer":
+        id: "notifications.consumer"
+        name: "Consumer"
+        description: "Notification delivery across all channels: email, SMS, push"
+        services:
+          "notifications-consumer":
+            id: "notifications.consumer.notifications-consumer"
+            version: "1.0.0"
+            name: "Notifications Consumer"
+            description: "Pure consumer service — delivers notifications in response to events from all domains"
+            repository: "{{root}}/notifications-consumer-api"
+            docs:
+              summary: SUMMARY.md
+              content: EVENT_CATALOG.md
+              changelog: CHANGELOG.md
+            specs:
+              - type: zdl
+                path: "domain-model.zdl"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
+            consumers:
+              - $ref: "#/domains/catalog/subdomains/catalog-management/services/catalog-products"
+              - $ref: "#/domains/orders/subdomains/checkout/services/orders-checkout"
+              - $ref: "#/domains/fulfillment/subdomains/shipping/services/fulfillment-shipping"
+
+  "customer-identity":
+    id: "customer-identity"
+    name: "Customer & Identity"
+    description: "Customer profiles, loyalty tiers and authentication"
+    subdomains:
+      "identity":
+        id: "customer-identity.identity"
+        name: "Identity"
+        description: "Customer profiles and authentication"
+      "loyalty":
+        id: "customer-identity.loyalty"
+        name: "Loyalty"
+        description: "Loyalty tiers, points and rewards programs"

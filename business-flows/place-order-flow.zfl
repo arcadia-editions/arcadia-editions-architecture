@@ -1,0 +1,112 @@
+@import(catalog: "com.arcadia-editions.domain:catalog-products:RELEASE")
+@import(orders: "com.arcadia-editions.domain:orders-checkout:RELEASE")
+@import(payments: "com.arcadia-editions.domain:payments-processing:RELEASE")
+@import(fulfillment: "com.arcadia-editions.domain:fulfillment-shipping:RELEASE")
+@import(notifications: "com.arcadia-editions.domain:notifications-consumer:RELEASE")
+
+systems {
+    @zdl("../../catalog-products-api/domain-model.zdl")
+    CatalogProducts {
+        service CatalogProductsService
+    }
+
+    @zdl("../../orders-checkout-api/domain-model.zdl")
+    OrdersCheckout {
+        service OrdersCheckoutService
+    }
+
+    @zdl("../../payments-processing-api/domain-model.zdl")
+    PaymentsProcessing {
+        service PaymentsProcessingService
+    }
+
+    @zdl("../../fulfillment-shipping-api/domain-model.zdl")
+    FulfillmentShipping {
+        service FulfillmentShippingService
+    }
+
+    @zdl("../../notifications-consumer-api/domain-model.zdl")
+    NotificationsConsumer {
+        service NotificationsConsumerService
+    }
+}
+
+/**
+ * Place Order Flow
+ *
+ * Models the full lifecycle of a customer placing an order during a limited edition drop.
+ * Stock reservation comes before payment — scarcity is the core business constraint.
+ * Includes compensation flows for stock unavailability, payment failure, and payment timeout.
+ */
+flow PlaceOrderFlow {
+
+    @actor(Customer)
+    start CustomerPlacesOrder { }
+
+    // Stock is reserved first — during a hot drop this is the critical constraint
+    when CustomerPlacesOrder do reserveStock {
+        service CatalogProducts.CatalogProductsService
+        event StockReserved
+        event StockUnavailable
+    }
+
+    when StockReserved do createOrder {
+        service OrdersCheckout.OrdersCheckoutService
+        event OrderCreated
+    }
+
+    when OrderCreated do authorizePayment {
+        service PaymentsProcessing.PaymentsProcessingService
+        event PaymentAuthorized
+        event PaymentFailed
+    }
+
+    when PaymentAuthorized do confirmOrder {
+        service OrdersCheckout.OrdersCheckoutService
+        event OrderConfirmed
+    }
+
+    when OrderConfirmed do scheduleFulfillment {
+        service FulfillmentShipping.FulfillmentShippingService
+        event FulfillmentScheduled
+    }
+
+    when OrderConfirmed do sendOrderConfirmation {
+        service NotificationsConsumer.NotificationsConsumerService
+        event OrderConfirmationSent
+    }
+
+    // Failure path: stock gone during a hot drop
+    when StockUnavailable do sendStockUnavailableNotification {
+        service NotificationsConsumer.NotificationsConsumerService
+        event StockUnavailableNotificationSent
+    }
+
+    // Failure path: payment declined — release reserved stock
+    when PaymentFailed do cancelOrder {
+        service CatalogProducts.CatalogProductsService
+        event OrderCancelled
+        event PaymentFailedNotificationSent
+    }
+
+    when OrderCancelled do releaseStock {
+        service NotificationsConsumer.NotificationsConsumerService
+        event StockReleased
+    }
+
+    // Timeout path: customer started checkout but never completed payment
+    @time("10 minutes after OrderCreated and not PaymentAuthorized or PaymentFailed")
+    start PaymentTimeout {
+        orderId String
+    }
+
+    when PaymentTimeout do cancelOrder {
+        service CatalogProducts.CatalogProductsService
+    }
+
+    end {
+        completed: OrderConfirmationSent
+        stockGone: StockUnavailableNotificationSent
+        paymentDeclined: PaymentFailedNotificationSent
+    }
+}
