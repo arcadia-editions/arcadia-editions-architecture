@@ -1,32 +1,37 @@
 systems {
-    @zdl("catalog-products-api/domain-model.zdl")
-    CatalogProducts {
-        service CatalogProductsService for (Product)
-    }
 
     @zdl("orders-checkout-api/domain-model.zdl")
     OrdersCheckout {
-        service OrdersCheckoutService
+        service OrdersCheckoutService {
+            commands: startOrderCheckout, confirmOrder, cancelOrder
+        }
+    }
+    @zdl("catalog-products-api/domain-model.zdl")
+    CatalogInventory {
+        service InventoryService for (StockReservation) {
+            commands: reserveStock, releaseStock
+        }
     }
 
     @zdl("payments-processing-api/domain-model.zdl")
     PaymentsProcessing {
-        service PaymentsProcessingService
+        service PaymentsProcessingService {
+            commands: authorizePayment, retryPayment, capturePayment, voidPayment
+        }
     }
 
     @zdl("fulfillment-shipping-api/domain-model.zdl")
     FulfillmentShipping {
-        service FulfillmentShippingService
+        service FulfillmentShippingService {
+            commands: scheduleFulfillment
+        }
     }
 
     @zdl("notifications-consumer-api/domain-model.zdl")
     NotificationsConsumer {
-        service NotificationsConsumerService
-    }
-
-    @zdl("scheduler-api/domain-model.zdl")
-    Scheduler {
-        service SchedulerService
+        service NotificationsConsumerService {
+            commands: sendOrderConfirmation, sendStockUnavailableNotification, sendOrderCancelledNotification
+        }
     }
 }
 
@@ -79,8 +84,8 @@ flow PlaceOrderFlow {
      * came for. If stock is gone, we tell the customer immediately and stop here.
      */
     do reserveStock {
-        service CatalogProducts.CatalogProductsService
-         response StockReserved
+        service CatalogInventory.InventoryService
+        response StockReserved
         response StockUnavailable
     }
 
@@ -94,8 +99,8 @@ flow PlaceOrderFlow {
     when OrderCreated do authorizePayment {
         service PaymentsProcessing.PaymentsProcessingService
         emits PaymentAuthorized
-        emits PaymentDeclined
-        emits PaymentFailed
+        @failure emits PaymentDeclined
+        @failure emits PaymentFailed
     }
 
     /**
@@ -191,7 +196,7 @@ flow PlaceOrderFlow {
      */
     @compensates(reserveStock)
     when PaymentDeclined, PaymentRetryExhausted, PaymentVoided, ReservationExpired do releaseStock {
-        service CatalogProducts.CatalogProductsService
+        service CatalogInventory.InventoryService
         emits StockReleased
     }
 
