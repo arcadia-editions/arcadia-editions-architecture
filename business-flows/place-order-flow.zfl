@@ -8,8 +8,8 @@ systems {
     }
     @zdl("catalog-products-api/domain-model.zdl")
     CatalogInventory {
-        service InventoryService for (StockReservation) {
-            commands: reserveStock, releaseStock
+        service InventoryService for(StockReservation) {
+            commands: reserveStock, confirStockReservation, releaseStock
         }
     }
 
@@ -98,9 +98,12 @@ flow PlaceOrderFlow {
      */
     when OrderCreated do authorizePayment {
         service PaymentsProcessing.PaymentsProcessingService
+        @outcome(authorized)
         emits PaymentAuthorized
-        @failure emits PaymentDeclined
-        @failure emits PaymentFailed
+        @outcome(declined)
+        emits PaymentDeclined
+        @failure @outcome(failed)
+        emits PaymentFailed
     }
 
     /**
@@ -111,14 +114,19 @@ flow PlaceOrderFlow {
      */
     when PaymentFailed do retryPayment {
         service PaymentsProcessing.PaymentsProcessingService
+        @outcome(retried)
         emits PaymentRetried
+        @outcome("retry-exhausted")
         emits PaymentRetryExhausted
     }
 
     when PaymentRetried do authorizePayment {
         service PaymentsProcessing.PaymentsProcessingService
+        @outcome(authorized)
         emits PaymentAuthorized
+        @outcome(declined)
         emits PaymentDeclined
+        @outcome(failed)
         emits PaymentFailed
     }
 
@@ -128,7 +136,16 @@ flow PlaceOrderFlow {
      */
     when PaymentAuthorized do confirmOrder {
         service OrdersCheckout.OrdersCheckoutService
+        call confirmStockReservation
         emits OrderConfirmed
+    }
+
+    /**
+     * Stock Reservation is confirmed
+     */
+    do confirmStockReservation {
+        service CatalogInventory.InventoryService
+        emits StockReservationConfirmed
     }
 
     /**
@@ -234,7 +251,7 @@ flow PlaceOrderFlow {
     }
 
     end {
-        completed: PaymentCaptured
+        completed: OrderConfirmationSent
         stockGone: StockUnavailableNotificationSent
         orderCancelled: OrderCancelledNotificationSent
     }

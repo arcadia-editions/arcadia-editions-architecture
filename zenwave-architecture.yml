@@ -1,8 +1,17 @@
+# yaml-language-server: $schema=https://schemas.zenwave360.io/zenwave-architecture/latest/schema.json
+
 config:
   title: "Arcadia Editions - Event-Driven Retail Architecture"
   version: 0.0.1
-  properties:
-    root: ..   # resolved relative to the location of this file
+  sourcePriority:
+    - file
+    - http
+  sources:
+    http:
+      roots: [ "https://raw.githubusercontent.com/arcadia-editions/"]
+  naming:
+    groupIdExpression: "${service.id}"
+    artifactIdExpression: "${artifactName}"
 
 domains:
   "catalog":
@@ -20,12 +29,12 @@ domains:
             version: "1.0.0"
             name: "Catalog Products"
             description: "Manages product catalog definitions, release metadata, and publication lifecycle"
-            repository: "{{root}}/catalog-products-api"
+            path: "catalog-products-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
-            specs:
+            artifacts:
               - type: zdl
                 path: "domain-model.zdl"
               - type: asyncapi
@@ -47,12 +56,12 @@ domains:
             version: "1.0.0"
             name: "Catalog Inventory"
             description: "Owns scarce stock reservation, stock release, and inventory position management"
-            repository: "{{root}}/catalog-inventory-api"
+            path: "catalog-inventory-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
-            specs:
+            artifacts:
               - type: zdl
                 path: "domain-model.zdl"
               - type: asyncapi
@@ -79,12 +88,12 @@ domains:
             version: "1.0.0"
             name: "Orders Checkout"
             description: "Owns checkout flow, order lifecycle, and the handoff from purchase intent to confirmed order"
-            repository: "{{root}}/orders-checkout-api"
+            path: "orders-checkout-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
-            specs:
+            artifacts:
               - type: zdl
                 path: "domain-model.zdl"
               - type: asyncapi
@@ -112,12 +121,12 @@ domains:
             version: "1.0.0"
             name: "Payments Processing"
             description: "Owns payment authorization, retries, capture, voiding, and provider-facing outcomes"
-            repository: "{{root}}/payments-processing-api"
+            path: "payments-processing-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
-            specs:
+            artifacts:
               - type: zdl
                 path: "domain-model.zdl"
               - type: asyncapi
@@ -145,12 +154,12 @@ domains:
             version: "1.0.0"
             name: "Fulfillment Shipping"
             description: "Owns scheduling and readiness of shipping operations after an order is confirmed"
-            repository: "{{root}}/fulfillment-shipping-api"
+            path: "fulfillment-shipping-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
-            specs:
+            artifacts:
               - type: zdl
                 path: "domain-model.zdl"
               - type: asyncapi
@@ -177,12 +186,12 @@ domains:
             version: "1.0.0"
             name: "Notifications Consumer"
             description: "Transforms business outcomes into customer-facing notifications and delivery results"
-            repository: "{{root}}/notifications-consumer-api"
+            path: "notifications-consumer-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
-            specs:
+            artifacts:
               - type: zdl
                 path: "domain-model.zdl"
               - type: asyncapi
