@@ -39,8 +39,8 @@ domains:
                 path: "domain-model.zdl"
               - type: asyncapi
                 path: "asyncapi.yml"
-              # - type: asyncapi-client
-              #   path: "asyncapi-client.yml"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
               - type: openapi
                 path: "openapi.yml"
             consumers:
@@ -66,8 +66,8 @@ domains:
                 path: "domain-model.zdl"
               - type: asyncapi
                 path: "asyncapi.yml"
-              # - type: asyncapi-client
-              #   path: "asyncapi-client.yml"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
               - type: openapi
                 path: "openapi.yml"
             consumers:
@@ -98,8 +98,8 @@ domains:
                 path: "domain-model.zdl"
               - type: asyncapi
                 path: "asyncapi.yml"
-              # - type: asyncapi-client
-              #   path: "asyncapi-client.yml"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
               - type: openapi
                 path: "openapi.yml"
             consumers:
@@ -131,8 +131,8 @@ domains:
                 path: "domain-model.zdl"
               - type: asyncapi
                 path: "asyncapi.yml"
-              # - type: asyncapi-client
-              #   path: "asyncapi-client.yml"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
               - type: openapi
                 path: "openapi.yml"
             consumers:
@@ -164,8 +164,8 @@ domains:
                 path: "domain-model.zdl"
               - type: asyncapi
                 path: "asyncapi.yml"
-              # - type: asyncapi-client
-              #   path: "asyncapi-client.yml"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
               - type: openapi
                 path: "openapi.yml"
             consumers:
@@ -196,7 +196,7 @@ domains:
                 path: "domain-model.zdl"
               - type: asyncapi
                 path: "asyncapi.yml"
-              # - type: asyncapi-client
-              #   path: "asyncapi-client.yml"
+              - type: asyncapi-client
+                path: "asyncapi-client.yml"
               - type: openapi
                 path: "openapi.yml"
