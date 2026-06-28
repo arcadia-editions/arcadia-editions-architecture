@@ -1,6 +1,6 @@
 ---
 name: zfl-to-zdl
-version: 1.1.0
+version: 1.2.0
 description: >
   Generate one ZDL domain model per system from a ZFL business flow. Map
   actor starts, event-driven policies, and direct synchronous calls into ZDL
@@ -32,9 +32,11 @@ Read these inputs before generating anything:
 1. The target ZFL flow file.
 2. Any `@zdl("...")` mappings declared inside the `systems` block.
 3. `zenwave-architecture.yml` if present, to resolve repository paths and base packages.
-4. The canonical ZDL grammar URL:
+4. `zdl-asyncapi-naming-conventions.md`, located next to this skill, for the
+   mandatory ZDL service ids, AsyncAPI plugin ids, channel ids, and topic names.
+5. The canonical ZDL grammar URL:
    `https://raw.githubusercontent.com/ZenWave360/dsl-kotlin/refs/heads/main/src/commonMain/antlr/io.zenwave360.language.antlr/Zdl.g4`
-5. Existing `domain-model.zdl` files in target repos, if they already exist.
+6. Existing `domain-model.zdl` files in target repos, if they already exist.
 
 ## Reference resolution order
 
@@ -42,14 +44,18 @@ Use references in this order:
 
 1. The canonical ZDL grammar URL:
    `https://raw.githubusercontent.com/ZenWave360/dsl-kotlin/refs/heads/main/src/commonMain/antlr/io.zenwave360.language.antlr/Zdl.g4`
-2. Existing local `domain-model.zdl` files in target or sibling repos.
-3. The embedded ZDL example at the end of this skill.
-4. Any user-provided example.
+2. `zdl-asyncapi-naming-conventions.md` for AsyncAPI-related identity, channel,
+   and topic naming.
+3. Existing local `domain-model.zdl` files in target or sibling repos.
+4. The embedded ZDL example at the end of this skill.
+5. Any user-provided example.
 
 Do not search for or depend on a local `Zdl.g4`. Use the canonical grammar URL as the grammar source.
 The grammar is the source of truth for syntax.
-Examples are references for structure, idiom, and naming, not for overriding grammar.
-Prefer existing local `domain-model.zdl` files over the embedded example for style and naming conventions.
+The supporting naming file is the source of truth for ZDL AsyncAPI identifiers,
+channel ids, and topic names. Examples are references for structure and idiom,
+not for overriding the grammar or naming rules. Prefer existing local
+`domain-model.zdl` files over the embedded example for style.
 
 ## Invocation
 
@@ -176,9 +182,9 @@ Classification:
 - If the trigger is another service's event:
   - add an `api` to `apis` block using the API reference URL resolution rules, for example `apis { asyncapi client OtherServiceApi "https://registry.example.com/apis/registry/v3/groups/orders.checkout/artifacts/orders-checkout-asyncapi/versions/1.0.0/content" }`.
   - name client APIs as `{ProducerSystemName}Api`, for example `OrdersCheckoutApi`.
-  - annotate the service command with `@asyncapi(api: OtherServiceApi, channel: <EventName>Channel)`.
-  - if the event is consumed from the same service's own AsyncAPI, omit `api` and use `@asyncapi(channel: <EventName>Channel)`.
-- If it's an standalone `do someCommand { }` block map them as direct calls with REST semantics: `emits` becomes and event, `response` becomes the REST response. See direct calls below.
+  - annotate the service command with `@asyncapi(api: OtherServiceApi, channel: "<event-name>-event-v1")`, using the provider's exact channel id.
+  - if the event is consumed from the same service's own AsyncAPI, omit `api` and use `@asyncapi(channel: "<event-name>-event-v1")`.
+- If it is a standalone `do someCommand { }` block, map it as a direct call with REST semantics: `emits` becomes an event and `response` becomes the REST response. See direct calls below.
 
 The emitted outcomes become:
 
@@ -241,7 +247,7 @@ In practice:
 
 If the flow clearly uses a response only as a private synchronous result and not as a published contract, keep it minimal and do not invent extra messaging annotations beyond what the ZDL example and grammar support.
 
-A `response` typicaly maps to an `output` object in the ZDL, if multiple responses are possible, use an `enum` in the `output` response type:
+A `response` typically maps to an `output` object in the ZDL. If multiple responses are possible, use an `enum` in the `output` response type:
 
 ```zdl
 @rest("/products")
@@ -282,23 +288,26 @@ Use transport annotations by interaction type:
 
 - actor-facing command -> `@rest` on the service and `@post` on the method
 - direct synchronous inter-service call -> `@post` on the method
-- event-triggered command -> `@asyncapi(api: OtherServiceApi, channel: <EventName>Channel)`
-- self-consuming event-triggered command -> `@asyncapi(channel: <EventName>Channel)`
+- event-triggered command -> `@asyncapi(api: OtherServiceApi, channel: "<message-name>-<message-type>-<version>")`
+- self-consuming event-triggered command -> `@asyncapi(channel: "<message-name>-<message-type>-<version>")`
 
 For pure consumer services, omit `@rest` if they have no actor-facing or direct-call surface.
 
 ### 8. Naming conventions
 
-Use existing repository naming if available from `@zdl(...)` or `zenwave-architecture.yml`.
+Read and apply `zdl-asyncapi-naming-conventions.md` before generating a ZDL file.
+In summary:
 
-Otherwise:
-
-- base package: `io.arcadiaeditions.{domain}.{subdomain}`
-- event topic: `{domain}.{subdomain}.{event-name-kebab-case}.[event|command|response].v1`
-- events channel: `{PascalCaseEvent}Channel`
+- model id: `urn:com.arcadiaeditions:<domain>:<subdomain>`
+- provider plugin id: `urn:com.arcadiaeditions:<domain>:<subdomain>:asyncapi`
+- client plugin id: `urn:com.arcadiaeditions:<domain>:<subdomain>:asyncapi:client`
+- base package: `com.arcadiaeditions.<domain>.<subdomain>`
+- channel id: `<message-name>-<message-type>-<version>`
+- topic: `<domain>-<subdomain>.<message-name>.<message-type>.<content-type>.<version>`
 - AsyncAPI client name: `{ProducerSystemName}Api`, for example `OrdersCheckoutApi`
 
-Prefer the naming already present in the provided example over invented alternatives.
+Use existing repository context to resolve the domain, subdomain, content type,
+and version, but do not let an older example override these formats.
 
 ## Quality checklist
 
@@ -311,6 +320,9 @@ Before writing each file, verify:
 - State-changing methods have `@transition` annotations.
 - Lifecycle enum values cover every state referenced by `@lifecycle` and `@transition`.
 - `withEvents` matches the outcomes declared in the flow.
+- The model id and any AsyncAPI plugin ids follow `zdl-asyncapi-naming-conventions.md`.
+- Locally owned channels and topics follow `zdl-asyncapi-naming-conventions.md`.
+- Consumed channel ids exactly match the provider's channel ids.
 - Output paths honor `@zdl(...)` when present.
 - Existing files were preserved or updated intentionally, not overwritten by accident.
 
@@ -338,8 +350,9 @@ minimal and specific to the target flow.
 
 ```zdl
 config {
+    id "urn:com.arcadiaeditions:orders:fulfillment"
     title "Order Fulfillment Example"
-    basePackage "io.zenwave360.example.orderfulfillment"
+    basePackage "com.arcadiaeditions.orders.fulfillment"
 }
 
 @aggregate
@@ -394,26 +407,26 @@ service OrderService for (Order) {
     getOrder(@natural id) Order?
 }
 
-@asyncapi({ channel: "OrderPlacedChannel", topic: "orderfulfillment.order-placed.event.v1" })
+@asyncapi({ channel: "order-placed-event-v1", topic: "orders-fulfillment.order-placed.event.avro.v1" })
 event OrderPlaced {
     id Long
     version Integer
 }
 
-@asyncapi({ channel: "OrderPaidChannel", topic: "orderfulfillment.order-paid.event.v1" })
+@asyncapi({ channel: "order-paid-event-v1", topic: "orders-fulfillment.order-paid.event.avro.v1" })
 event OrderPaid {
     id Long
     version Integer
 }
 
-@asyncapi({ channel: "OrderShippedChannel", topic: "orderfulfillment.order-shipped.event.v1" })
+@asyncapi({ channel: "order-shipped-event-v1", topic: "orders-fulfillment.order-shipped.event.avro.v1" })
 event OrderShipped {
     id Long
     version Integer
     trackingNumber String
 }
 
-@asyncapi({ channel: "OrderCancelledChannel", topic: "orderfulfillment.order-cancelled.event.v1" })
+@asyncapi({ channel: "order-cancelled-event-v1", topic: "orders-fulfillment.order-cancelled.event.avro.v1" })
 event OrderCancelled {
     id Long
     version Integer

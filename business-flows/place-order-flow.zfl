@@ -1,3 +1,7 @@
+config {
+    version "0.0.0"
+}
+
 systems {
 
     @zdl("orders-checkout-api/domain-model.zdl")

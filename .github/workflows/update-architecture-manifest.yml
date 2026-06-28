@@ -1,0 +1,110 @@
+name: Update architecture manifest
+
+on:
+  repository_dispatch:
+    types: [artifact-released]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: architecture-artifact-${{ github.event.client_payload.artifactId }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    env:
+      REPOSITORY: ${{ github.event.client_payload.repository }}
+      ARTIFACT_ID: ${{ github.event.client_payload.artifactId }}
+      ARTIFACT_IDS: '${{ toJson(github.event.client_payload.artifactIds) }}'
+      VERSION: ${{ github.event.client_payload.version }}
+      MANIFEST_PATH: zenwave-architecture.yml
+      GH_TOKEN: ${{ secrets.ARCHITECTURE_RELEASE_TOKEN || github.token }}
+    steps:
+      - name: Validate dispatch payload
+        shell: bash
+        run: |
+          [[ "$REPOSITORY" =~ ^[A-Za-z0-9_.-]+$ ]]
+          [[ "$ARTIFACT_ID" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]*$ ]]
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]
+          artifact_ids="$ARTIFACT_IDS"
+          if ! jq -e 'type == "array" and length > 0' <<< "$artifact_ids" >/dev/null 2>&1; then
+            artifact_ids="$(jq -cn --arg artifactId "$ARTIFACT_ID" '[$artifactId]')"
+          fi
+          jq -e 'all(.[]; test("^[A-Za-z0-9_][A-Za-z0-9_.-]*$"))' <<< "$artifact_ids" >/dev/null
+          artifact_ids="$(jq -c . <<< "$artifact_ids")"
+          printf 'ARTIFACT_IDS=%s\n' "$artifact_ids" >> "$GITHUB_ENV"
+
+      - name: Check out architecture repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check out manifest tooling
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: arcadia-editions/api-product-workflows
+          ref: main
+          token: ${{ secrets.ARCHITECTURE_RELEASE_TOKEN || github.token }}
+          path: pipeline-repo
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up JBang
+        uses: jbangdev/setup-jbang@cc28889678db839e29433f42f9ff25f148b6d8de # main
+        with:
+          version: 0.138.0
+
+      - name: Update the released manifest version atomically
+        shell: bash
+        run: |
+          manifest_file="$GITHUB_WORKSPACE/$MANIFEST_PATH"
+          manifest_tool="$GITHUB_WORKSPACE/pipeline-repo/scripts/artifacts/ManifestTool.java"
+          if [[ "$ARTIFACT_ID" == "service-all" ]]; then
+            jbang --quiet "$manifest_tool" update-service-version \
+              "$manifest_file" "$REPOSITORY" "$VERSION"
+          else
+            jbang --quiet "$manifest_tool" update \
+              "$manifest_file" "$REPOSITORY" "$ARTIFACT_ID" "$VERSION"
+          fi
+
+      - name: Open and merge architecture pull request
+        shell: bash
+        run: |
+          branch="update/$ARTIFACT_ID/v$VERSION"
+          git config user.name 'arcadia-editions-architecture[bot]'
+          git config user.email 'arcadia-editions-architecture[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git add -- "$MANIFEST_PATH"
+          git commit --allow-empty -m "Update $ARTIFACT_ID to $VERSION"
+          gh auth setup-git
+          git push --set-upstream origin "$branch"
+          pr_url="$(gh pr create --base main --head "$branch" \
+            --title "Update $ARTIFACT_ID to $VERSION" \
+            --body "Synchronizes all released $ARTIFACT_ID bundle members from $REPOSITORY.")"
+          for attempt in $(seq 1 120); do
+            [[ "$(gh pr view "$pr_url" --json state --jq .state)" != MERGED ]] || exit 0
+            gh pr merge "$pr_url" --merge --delete-branch && exit 0
+            sleep 30
+          done
+          echo 'architecture manifest PR did not merge before timeout' >&2
+          exit 1
+
+      - name: Rebuild EventCatalog
+        env:
+          EVENT_CATALOG_TOKEN: ${{ secrets.EVENT_CATALOG_TOKEN }}
+        shell: bash
+        run: |
+          jq -n \
+            --arg artifactId "$ARTIFACT_ID" --arg version "$VERSION" --argjson artifactIds "$ARTIFACT_IDS" \
+            '{event_type:"api-updated",client_payload:{artifactId:$artifactId,artifactIds:$artifactIds,version:$version}}' \
+            | GH_TOKEN="$EVENT_CATALOG_TOKEN" gh api repos/arcadia-editions/arcadia-event-catalog/dispatches --input -
