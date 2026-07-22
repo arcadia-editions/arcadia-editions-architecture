@@ -3,15 +3,18 @@
 config:
   title: "Arcadia Editions - Event-Driven Retail Architecture"
   version: 0.0.1
-  sourcePriority:
-    - file
-    - http
+  groupIdExpression: "com.arcadiaeditions.${service.id}"
+  artifactIdExpression: "${artifact.fileNameWithoutExtension}"
+  contentResolution:
+    - workspace
+    - git
   sources:
-    http:
-      roots: [ "https://raw.githubusercontent.com/arcadia-editions/"]
-  naming:
-    groupIdExpression: "${service.id}"
-    artifactIdExpression: "${artifactName}"
+    workspace:
+      basePathExpression: "../${service.repository}"
+    git:
+      provider: github
+      server: "https://github.com"
+      contentUrlExpression: "${server}/arcadia-editions/${service.repository}/raw/main/${content.path}"
 
 domains:
   "catalog":
@@ -26,10 +29,10 @@ domains:
         services:
           "catalog-products":
             id: "catalog.catalog-management.catalog-products"
-            version: "1.0.0"
+            repository: "catalog-products-api"
+            version: "0.0.1"
             name: "Catalog Products"
             description: "Manages product catalog definitions, release metadata, and publication lifecycle"
-            path: "catalog-products-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
@@ -43,8 +46,6 @@ domains:
                 path: "asyncapi-client.yml"
               - type: openapi
                 path: "openapi.yml"
-            consumers:
-              - $ref: "#/domains/orders/subdomains/checkout/services/orders-checkout"
 
       "inventory-management":
         id: "catalog.inventory-management"
@@ -53,10 +54,10 @@ domains:
         services:
           "catalog-inventory":
             id: "catalog.inventory-management.catalog-inventory"
-            version: "1.0.0"
+            repository: "catalog-inventory-api"
+            version: "0.0.1"
             name: "Catalog Inventory"
             description: "Owns scarce stock reservation, stock release, and inventory position management"
-            path: "catalog-inventory-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
@@ -71,7 +72,7 @@ domains:
               - type: openapi
                 path: "openapi.yml"
             consumers:
-              - $ref: "#/domains/orders/subdomains/checkout/services/orders-checkout"
+              - "orders/checkout/orders-checkout"
 
   "orders":
     id: "orders"
@@ -85,10 +86,10 @@ domains:
         services:
           "orders-checkout":
             id: "orders.checkout.orders-checkout"
-            version: "1.0.0"
+            repository: "orders-checkout-api"
+            version: "0.0.1"
             name: "Orders Checkout"
             description: "Owns checkout flow, order lifecycle, and the handoff from purchase intent to confirmed order"
-            path: "orders-checkout-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
@@ -103,8 +104,9 @@ domains:
               - type: openapi
                 path: "openapi.yml"
             consumers:
-              - $ref: "#/domains/payments/subdomains/payment-processing/services/payments-processing"
-              - $ref: "#/domains/fulfillment/subdomains/shipping/services/fulfillment-shipping"
+              - "payments/payment-processing/payments-processing"
+              - "fulfillment/shipping/fulfillment-shipping"
+              - "notifications/customer-communications/notifications-consumer"
 
   "payments":
     id: "payments"
@@ -118,10 +120,10 @@ domains:
         services:
           "payments-processing":
             id: "payments.payment-processing.payments-processing"
-            version: "1.0.0"
+            repository: "payments-processing-api"
+            version: "0.0.1"
             name: "Payments Processing"
             description: "Owns payment authorization, retries, capture, voiding, and provider-facing outcomes"
-            path: "payments-processing-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
@@ -136,8 +138,9 @@ domains:
               - type: openapi
                 path: "openapi.yml"
             consumers:
-              - $ref: "#/domains/orders/subdomains/checkout/services/orders-checkout"
-              - $ref: "#/domains/notifications/subdomains/customer-communications/services/notifications-consumer"
+              - "orders/checkout/orders-checkout"
+              - "catalog/inventory-management/catalog-inventory"
+              - "notifications/customer-communications/notifications-consumer"
 
   "fulfillment":
     id: "fulfillment"
@@ -151,10 +154,10 @@ domains:
         services:
           "fulfillment-shipping":
             id: "fulfillment.shipping.fulfillment-shipping"
-            version: "1.0.0"
+            repository: "fulfillment-shipping-api"
+            version: "0.0.1"
             name: "Fulfillment Shipping"
             description: "Owns scheduling and readiness of shipping operations after an order is confirmed"
-            path: "fulfillment-shipping-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
@@ -169,7 +172,7 @@ domains:
               - type: openapi
                 path: "openapi.yml"
             consumers:
-              - $ref: "#/domains/payments/subdomains/payment-processing/services/payments-processing"
+              - "payments/payment-processing/payments-processing"
 
   "notifications":
     id: "notifications"
@@ -183,10 +186,10 @@ domains:
         services:
           "notifications-consumer":
             id: "notifications.customer-communications.notifications-consumer"
-            version: "1.0.0"
+            repository: "notifications-consumer-api"
+            version: "0.0.1"
             name: "Notifications Consumer"
             description: "Transforms business outcomes into customer-facing notifications and delivery results"
-            path: "notifications-consumer-api/main"
             docs:
               summary: SUMMARY.md
               # content: EVENT_CATALOG.md
@@ -196,7 +199,5 @@ domains:
                 path: "domain-model.zdl"
               - type: asyncapi
                 path: "asyncapi.yml"
-              - type: asyncapi-client
-                path: "asyncapi-client.yml"
               - type: openapi
                 path: "openapi.yml"
