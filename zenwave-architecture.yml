@@ -40,12 +40,16 @@ domains:
             artifacts:
               - type: zdl
                 path: "domain-model.zdl"
+                version: "0.0.0"
               - type: asyncapi
                 path: "asyncapi.yml"
+                version: "0.0.0"
               - type: asyncapi-client
                 path: "asyncapi-client.yml"
+                version: "0.0.0"
               - type: openapi
                 path: "openapi.yml"
+                version: "0.0.0"
 
       "inventory-management":
         id: "catalog.inventory-management"
@@ -65,12 +69,16 @@ domains:
             artifacts:
               - type: zdl
                 path: "domain-model.zdl"
+                version: "0.0.0"
               - type: asyncapi
                 path: "asyncapi.yml"
+                version: "0.0.0"
               - type: asyncapi-client
                 path: "asyncapi-client.yml"
+                version: "0.0.0"
               - type: openapi
                 path: "openapi.yml"
+                version: "0.0.0"
             consumers:
               - "orders/checkout/orders-checkout"
 
@@ -97,12 +105,16 @@ domains:
             artifacts:
               - type: zdl
                 path: "domain-model.zdl"
+                version: "0.0.0"
               - type: asyncapi
                 path: "asyncapi.yml"
+                version: "0.0.0"
               - type: asyncapi-client
                 path: "asyncapi-client.yml"
+                version: "0.0.0"
               - type: openapi
                 path: "openapi.yml"
+                version: "0.0.0"
             consumers:
               - "payments/payment-processing/payments-processing"
               - "fulfillment/shipping/fulfillment-shipping"
@@ -131,12 +143,16 @@ domains:
             artifacts:
               - type: zdl
                 path: "domain-model.zdl"
+                version: "0.0.0"
               - type: asyncapi
                 path: "asyncapi.yml"
+                version: "0.0.0"
               - type: asyncapi-client
                 path: "asyncapi-client.yml"
+                version: "0.0.0"
               - type: openapi
                 path: "openapi.yml"
+                version: "0.0.0"
             consumers:
               - "orders/checkout/orders-checkout"
               - "catalog/inventory-management/catalog-inventory"
@@ -165,12 +181,16 @@ domains:
             artifacts:
               - type: zdl
                 path: "domain-model.zdl"
+                version: "0.0.0"
               - type: asyncapi
                 path: "asyncapi.yml"
+                version: "0.0.0"
               - type: asyncapi-client
                 path: "asyncapi-client.yml"
+                version: "0.0.0"
               - type: openapi
                 path: "openapi.yml"
+                version: "0.0.0"
             consumers:
               - "payments/payment-processing/payments-processing"
 
@@ -197,7 +217,10 @@ domains:
             artifacts:
               - type: zdl
                 path: "domain-model.zdl"
+                version: "0.0.0"
               - type: asyncapi
                 path: "asyncapi.yml"
+                version: "0.0.0"
               - type: openapi
                 path: "openapi.yml"
+                version: "0.0.0"
