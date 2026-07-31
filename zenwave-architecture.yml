@@ -35,7 +35,7 @@ domains:
             description: "Manages product catalog definitions, release metadata, and publication lifecycle"
             docs:
               summary: SUMMARY.md
-              # content: EVENT_CATALOG.md
+              content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
             artifacts:
               - type: zdl
@@ -64,7 +64,7 @@ domains:
             description: "Owns scarce stock reservation, stock release, and inventory position management"
             docs:
               summary: SUMMARY.md
-              # content: EVENT_CATALOG.md
+              content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
             artifacts:
               - type: zdl
@@ -100,7 +100,7 @@ domains:
             description: "Owns checkout flow, order lifecycle, and the handoff from purchase intent to confirmed order"
             docs:
               summary: SUMMARY.md
-              # content: EVENT_CATALOG.md
+              content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
             artifacts:
               - type: zdl
@@ -138,7 +138,7 @@ domains:
             description: "Owns payment authorization, retries, capture, voiding, and provider-facing outcomes"
             docs:
               summary: SUMMARY.md
-              # content: EVENT_CATALOG.md
+              content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
             artifacts:
               - type: zdl
@@ -176,7 +176,7 @@ domains:
             description: "Owns scheduling and readiness of shipping operations after an order is confirmed"
             docs:
               summary: SUMMARY.md
-              # content: EVENT_CATALOG.md
+              content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
             artifacts:
               - type: zdl
@@ -212,7 +212,7 @@ domains:
             description: "Transforms business outcomes into customer-facing notifications and delivery results"
             docs:
               summary: SUMMARY.md
-              # content: EVENT_CATALOG.md
+              content: EVENT_CATALOG.md
               changelog: CHANGELOG.md
             artifacts:
               - type: zdl
