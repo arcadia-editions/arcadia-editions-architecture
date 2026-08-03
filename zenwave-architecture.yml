@@ -17,6 +17,18 @@ config:
       contentUrlExpression: "${server}/arcadia-editions/${service.repository}/raw/main/${content.path}"
 
 domains:
+  "architecture":
+    id: "architecture"
+    name: "Architecture"
+    description: "Cross-domain business flows, ADRs, and architecture documentation for the whole platform"
+    repository: "arcadia-editions-architecture"
+    artifacts:
+      - type: zfl
+        path: "business-flows/place-order-flow.zfl"
+    docs:
+      content: README.md
+      adrs: "adrs/"
+
   "catalog":
     id: "catalog"
     name: "Catalog & Inventory"

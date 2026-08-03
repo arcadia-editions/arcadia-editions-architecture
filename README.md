@@ -1,14 +1,16 @@
-# arcadia-editions-docs
+# arcadia-editions-architecture
 
-Architecture and business documentation for Arcadia Editions.
+The architecture world model for Arcadia Editions: the master manifest, cross-domain business flows, and architecture decision records.
 
-This repository is the documentation hub for the public demo platform. It captures the business and architectural context that supports the AsyncAPI and Terraform automation repositories.
+This repository holds `zenwave-architecture.yml`, the single index of every domain, subdomain, service, and contract in the platform, plus the content that doesn't belong to any one service repository because it spans multiple bounded contexts or describes the architecture itself.
 
 ## Contents
 
-- `business-flows/`: business process and domain flow documentation
-- `zenwave-architecture.yml`: architecture model for the wider platform
+- `zenwave-architecture.yml`: the architecture manifest — the index of the whole system, and the source `EventCatalog` generation reads from
+- `business-flows/`: cross-domain business flows (`.zfl`) that don't belong to a single bounded context
+- `adrs/`: architecture decision records
+- `skills/`: AI agent skills used when working across this architecture
 
 ## Purpose
 
-Use this repository to keep domain context, architecture, and flow documentation separate from the executable API and pipeline repositories.
+Use this repository to keep the architecture manifest, cross-domain flow documentation, and architecture decisions separate from the executable API and pipeline repositories, each of which owns its own domain model and contracts.
