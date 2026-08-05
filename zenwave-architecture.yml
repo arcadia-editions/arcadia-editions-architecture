@@ -3,18 +3,18 @@
 config:
   title: "Arcadia Editions - Event-Driven Retail Architecture"
   version: 0.0.1
-  groupIdExpression: "com.arcadiaeditions.${service.id}"
+  groupIdExpression: "com.arcadiaeditions.${owner.id}"
   artifactIdExpression: "${artifact.fileNameWithoutExtension}"
   contentResolution:
     - workspace
     - git
   sources:
     workspace:
-      basePathExpression: "../${service.repository}"
+      basePathExpression: "../${owner.repository}"
     git:
       provider: github
       server: "https://github.com"
-      contentUrlExpression: "${server}/arcadia-editions/${service.repository}/raw/main/${content.path}"
+      contentUrlExpression: "${server}/arcadia-editions/${owner.repository}/raw/main/${content.path}"
 
 domains:
   "architecture":
@@ -25,6 +25,7 @@ domains:
     artifacts:
       - type: zfl
         path: "business-flows/place-order-flow.zfl"
+        version: "0.0.0"
     docs:
       content: README.md
       adrs: "adrs/"
