@@ -21,7 +21,6 @@ jobs:
       ARTIFACT_IDS: '${{ toJson(github.event.client_payload.artifactIds) }}'
       VERSION: ${{ github.event.client_payload.version }}
       MANIFEST_PATH: zenwave-architecture.yml
-      MANIFEST_URI: https://raw.githubusercontent.com/arcadia-editions/arcadia-editions-architecture/main/zenwave-architecture.yml
       GH_TOKEN: ${{ secrets.ARCHITECTURE_RELEASE_TOKEN || github.token }}
     steps:
       - name: Validate dispatch payload
@@ -45,6 +44,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Check out manifest tooling
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: arcadia-editions/api-product-workflows
+          ref: main
+          token: ${{ secrets.ARCHITECTURE_RELEASE_TOKEN || github.token }}
+          path: pipeline-repo
+          persist-credentials: false
+
       - name: Set up Java
         uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
         with:
@@ -57,14 +65,13 @@ jobs:
           version: 0.138.0
 
       - name: Update every released bundle member atomically
-        env:
-          MANIFEST_TOOL: https://raw.githubusercontent.com/arcadia-editions/api-product-workflows/main/scripts/artifacts/ManifestTool.java
         shell: bash
         run: |
           manifest_file="$GITHUB_WORKSPACE/$MANIFEST_PATH"
           manifest_source="$manifest_file"
+          manifest_tool="$GITHUB_WORKSPACE/pipeline-repo/scripts/artifacts/ManifestTool.java"
           while IFS= read -r artifact_id; do
-            jbang --quiet "$MANIFEST_TOOL" update \
+            jbang --quiet "$manifest_tool" update \
               "$manifest_source" "$manifest_file" "$REPOSITORY" "$artifact_id" "$VERSION"
           done < <(jq -r '.[]' <<< "$ARTIFACT_IDS")
 
