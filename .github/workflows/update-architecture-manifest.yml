@@ -35,7 +35,8 @@ jobs:
             artifact_ids="$(jq -cn --arg artifactId "$ARTIFACT_ID" '[$artifactId]')"
           fi
           jq -e 'all(.[]; test("^[A-Za-z0-9_][A-Za-z0-9_.-]*$"))' <<< "$artifact_ids" >/dev/null
-          echo "ARTIFACT_IDS=$artifact_ids" >> "$GITHUB_ENV"
+          artifact_ids="$(jq -c . <<< "$artifact_ids")"
+          printf 'ARTIFACT_IDS=%s\n' "$artifact_ids" >> "$GITHUB_ENV"
 
       - name: Check out architecture repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
