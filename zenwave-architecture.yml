@@ -43,7 +43,7 @@ domains:
           "catalog-products":
             id: "catalog.catalog-management.catalog-products"
             repository: "catalog-products-api"
-            version: "0.0.1"
+            version: "0.0.0"
             name: "Catalog Products"
             description: "Manages product catalog definitions, release metadata, and publication lifecycle"
             docs:
@@ -72,7 +72,7 @@ domains:
           "catalog-inventory":
             id: "catalog.inventory-management.catalog-inventory"
             repository: "catalog-inventory-api"
-            version: "0.0.1"
+            version: "0.0.0"
             name: "Catalog Inventory"
             description: "Owns scarce stock reservation, stock release, and inventory position management"
             docs:
@@ -93,7 +93,7 @@ domains:
                 path: "openapi.yml"
                 version: "0.0.0"
             consumers:
-              - "orders/checkout/orders-checkout"
+              - "orders.checkout.orders-checkout"
 
   "orders":
     id: "orders"
@@ -108,7 +108,7 @@ domains:
           "orders-checkout":
             id: "orders.checkout.orders-checkout"
             repository: "orders-checkout-api"
-            version: "0.0.1"
+            version: "0.0.0"
             name: "Orders Checkout"
             description: "Owns checkout flow, order lifecycle, and the handoff from purchase intent to confirmed order"
             docs:
@@ -129,9 +129,9 @@ domains:
                 path: "openapi.yml"
                 version: "0.0.0"
             consumers:
-              - "payments/payment-processing/payments-processing"
-              - "fulfillment/shipping/fulfillment-shipping"
-              - "notifications/customer-communications/notifications-consumer"
+              - "payments.payment-processing.payments-processing"
+              - "fulfillment.shipping.fulfillment-shipping"
+              - "notifications.customer-communications.notifications-consumer"
 
   "payments":
     id: "payments"
@@ -146,7 +146,7 @@ domains:
           "payments-processing":
             id: "payments.payment-processing.payments-processing"
             repository: "payments-processing-api"
-            version: "0.0.1"
+            version: "0.0.0"
             name: "Payments Processing"
             description: "Owns payment authorization, retries, capture, voiding, and provider-facing outcomes"
             docs:
@@ -167,9 +167,9 @@ domains:
                 path: "openapi.yml"
                 version: "0.0.0"
             consumers:
-              - "orders/checkout/orders-checkout"
-              - "catalog/inventory-management/catalog-inventory"
-              - "notifications/customer-communications/notifications-consumer"
+              - "orders.checkout.orders-checkout"
+              - "catalog.inventory-management.catalog-inventory"
+              - "notifications.customer-communications.notifications-consumer"
 
   "fulfillment":
     id: "fulfillment"
@@ -184,7 +184,7 @@ domains:
           "fulfillment-shipping":
             id: "fulfillment.shipping.fulfillment-shipping"
             repository: "fulfillment-shipping-api"
-            version: "0.0.1"
+            version: "0.0.0"
             name: "Fulfillment Shipping"
             description: "Owns scheduling and readiness of shipping operations after an order is confirmed"
             docs:
@@ -205,7 +205,7 @@ domains:
                 path: "openapi.yml"
                 version: "0.0.0"
             consumers:
-              - "payments/payment-processing/payments-processing"
+              - "payments.payment-processing.payments-processing"
 
   "notifications":
     id: "notifications"
@@ -220,7 +220,7 @@ domains:
           "notifications-consumer":
             id: "notifications.customer-communications.notifications-consumer"
             repository: "notifications-consumer-api"
-            version: "0.0.1"
+            version: "0.0.0"
             name: "Notifications Consumer"
             description: "Transforms business outcomes into customer-facing notifications and delivery results"
             docs:
