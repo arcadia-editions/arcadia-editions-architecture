@@ -64,16 +64,13 @@ jobs:
         with:
           version: 0.138.0
 
-      - name: Update every released bundle member atomically
+      - name: Update the released artifact selection atomically
         shell: bash
         run: |
           manifest_file="$GITHUB_WORKSPACE/$MANIFEST_PATH"
-          manifest_source="$manifest_file"
           manifest_tool="$GITHUB_WORKSPACE/pipeline-repo/scripts/artifacts/ManifestTool.java"
-          while IFS= read -r artifact_id; do
-            jbang --quiet "$manifest_tool" update \
-              "$manifest_source" "$manifest_file" "$REPOSITORY" "$artifact_id" "$VERSION"
-          done < <(jq -r '.[]' <<< "$ARTIFACT_IDS")
+          jbang --quiet "$manifest_tool" update \
+            "$manifest_file" "$REPOSITORY" "$ARTIFACT_ID" "$VERSION"
 
       - name: Open and merge architecture pull request
         shell: bash
