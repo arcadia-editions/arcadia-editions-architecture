@@ -121,10 +121,10 @@ domains:
                 version: "0.0.0"
               - type: asyncapi
                 path: "asyncapi.yml"
-                version: "0.1.0"
+                version: "0.1.1"
               - type: asyncapi-client
                 path: "asyncapi-client.yml"
-                version: "0.1.0"
+                version: "0.1.1"
               - type: openapi
                 path: "openapi.yml"
                 version: "0.0.0"
