@@ -64,13 +64,18 @@ jobs:
         with:
           version: 0.138.0
 
-      - name: Update the released artifact selection atomically
+      - name: Update the released manifest version atomically
         shell: bash
         run: |
           manifest_file="$GITHUB_WORKSPACE/$MANIFEST_PATH"
           manifest_tool="$GITHUB_WORKSPACE/pipeline-repo/scripts/artifacts/ManifestTool.java"
-          jbang --quiet "$manifest_tool" update \
-            "$manifest_file" "$REPOSITORY" "$ARTIFACT_ID" "$VERSION"
+          if [[ "$ARTIFACT_ID" == "service-all" ]]; then
+            jbang --quiet "$manifest_tool" update-service-version \
+              "$manifest_file" "$REPOSITORY" "$VERSION"
+          else
+            jbang --quiet "$manifest_tool" update \
+              "$manifest_file" "$REPOSITORY" "$ARTIFACT_ID" "$VERSION"
+          fi
 
       - name: Open and merge architecture pull request
         shell: bash
@@ -80,7 +85,7 @@ jobs:
           git config user.email 'arcadia-editions-architecture[bot]@users.noreply.github.com'
           git switch -c "$branch"
           git add -- "$MANIFEST_PATH"
-          git commit -m "Update $ARTIFACT_ID bundle to $VERSION"
+          git commit --allow-empty -m "Update $ARTIFACT_ID to $VERSION"
           gh auth setup-git
           git push --set-upstream origin "$branch"
           pr_url="$(gh pr create --base main --head "$branch" \
