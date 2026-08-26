@@ -241,3 +241,44 @@ domains:
               - type: openapi
                 path: "openapi.yml"
                 version: "0.0.0"
+
+  "modulith":
+    id: "modulith"
+    name: "Modulith"
+    description: "In-process modular monolith domain models for Arcadia Editions"
+    subdomains:
+      "application":
+        id: "modulith.application"
+        name: "Application"
+        description: "Combined ZDL models packaged as one modular monolith"
+        services:
+          "arcadia-editions-modulith":
+            id: "modulith.application.arcadia-editions-modulith"
+            repository: "arcadia-editions-modulith-api"
+            version: "0.0.0"
+            name: "Arcadia Editions Modulith"
+            description: "Owns the in-process ZDL domain models for the modular monolith"
+            docs:
+              content: README.md
+            artifacts:
+              - type: zdl
+                path: "catalog-inventory-domain-model.zdl"
+                version: "0.0.0"
+              - type: zdl
+                path: "catalog-products-domain-model.zdl"
+                version: "0.0.0"
+              - type: zdl
+                path: "fulfillment-shipping-domain-model.zdl"
+                version: "0.0.0"
+              - type: zdl
+                path: "notifications-consumer-domain-model.zdl"
+                version: "0.0.0"
+              - type: zdl
+                path: "orders-checkout-domain-model.zdl"
+                version: "0.0.0"
+              - type: openapi
+                path: "orders-checkout-openapi.yml"
+                version: "0.0.0"
+              - type: zdl
+                path: "payments-processing-domain-model.zdl"
+                version: "0.0.0"
