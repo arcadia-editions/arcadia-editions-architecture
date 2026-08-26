@@ -255,7 +255,7 @@ domains:
           "arcadia-editions-modulith":
             id: "modulith.application.arcadia-editions-modulith"
             repository: "arcadia-editions-modulith-api"
-            version: "0.0.0"
+            version: "0.1.0"
             name: "Arcadia Editions Modulith"
             description: "Owns the in-process ZDL domain models for the modular monolith"
             docs:
