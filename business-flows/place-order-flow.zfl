@@ -10,10 +10,10 @@ systems {
             commands: startOrderCheckout, confirmOrder, cancelOrder
         }
     }
-    @zdl("catalog-products-api/domain-model.zdl")
+    @zdl("catalog-inventory-api/domain-model.zdl")
     CatalogInventory {
         service InventoryService for(StockReservation) {
-            commands: reserveStock, confirStockReservation, releaseStock
+            commands: reserveStock, confirmStockReservation, releaseStock
         }
     }
 
@@ -71,14 +71,19 @@ flow PlaceOrderFlow {
      */
     @actor(Customer)
     start StartOrderCheckout {
-        items SKU[]
+        customerId String
+        customerEmail String
+        paymentMethodId String
+        currency String
+        items OrderItem[]
+        shippingAddress ShippingAddress
     }
 
     when StartOrderCheckout do startOrderCheckout {
         service OrdersCheckout.OrdersCheckoutService
         call reserveStock
-        on StockReserved emits OrderCreated
-        on StockUnavailable emits StockUnavailable
+        on StockReservedResult emits OrderCreated
+        on StockUnavailableResult emits StockUnavailable
     }
 
     /**
@@ -89,8 +94,8 @@ flow PlaceOrderFlow {
      */
     do reserveStock {
         service CatalogInventory.InventoryService
-        response StockReserved
-        response StockUnavailable
+        response StockReservedResult
+        response StockUnavailableResult
     }
 
     /**
@@ -238,7 +243,7 @@ flow PlaceOrderFlow {
      * be cancelled. OrdersCheckout is the single owner of this transition —
      * no other part of the system should emits OrderCancelled directly.
      */
-    @compensates(createOrder)
+    @compensates(startOrderCheckout)
     when StockReleased do cancelOrder {
         service OrdersCheckout.OrdersCheckoutService
         emits OrderCancelled
