@@ -9,7 +9,7 @@ This repository holds `zenwave-architecture.yml`, the single index of every doma
 - `zenwave-architecture.yml`: the architecture manifest — the index of the whole system, and the source `EventCatalog` generation reads from
 - `business-flows/`: cross-domain business flows (`.zfl`) that don't belong to a single bounded context
 - `adrs/`: architecture decision records
-- `skills/`: AI agent skills used when working across this architecture
+- `skills/`: moved to https://github.com/ZenWave360/zenwave-sdd
 
 ## Purpose
 
