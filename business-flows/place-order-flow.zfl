@@ -207,7 +207,7 @@ flow PlaceOrderFlow {
      * refunding — a void is cleaner, faster, and never appears as a charge
      * on the customer's statement.
      */
-    @compensates(scheduleFulfillment)
+    @compensates(authorizePayment)
     when FulfillmentFailed, PaymentCaptureFailed do voidPayment {
         service PaymentsProcessing.PaymentsProcessingService
         emits PaymentVoided
