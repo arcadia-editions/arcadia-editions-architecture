@@ -109,7 +109,7 @@ domains:
           "orders-checkout":
             id: "orders.checkout.orders-checkout"
             repository: "orders-checkout-api"
-            version: "0.0.0"
+            version: "0.1.1"
             name: "Orders Checkout"
             description: "Owns checkout flow, order lifecycle, and the handoff from purchase intent to confirmed order"
             docs:
