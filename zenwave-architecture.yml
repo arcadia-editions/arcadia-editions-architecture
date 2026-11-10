@@ -74,7 +74,7 @@ domains:
           "catalog-inventory":
             id: "catalog.inventory-management.catalog-inventory"
             repository: "catalog-inventory-api"
-            version: "0.0.0"
+            version: "0.1.0"
             name: "Catalog Inventory"
             description: "Owns scarce stock reservation, stock release, and inventory position management"
             docs:
