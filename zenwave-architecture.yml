@@ -214,7 +214,7 @@ domains:
                 releaseGroup: asyncapi-all
               - type: openapi
                 path: "openapi.yml"
-                version: "0.0.0"
+                version: "0.1.0"
             consumers:
               - "payments.payment-processing.payments-processing#asyncapi-client"
 
