@@ -43,7 +43,7 @@ domains:
           "catalog-products":
             id: "catalog.catalog-management.catalog-products"
             repository: "catalog-products-api"
-            version: "0.0.0"
+            version: "0.1.0"
             name: "Catalog Products"
             description: "Manages product catalog definitions, release metadata, and publication lifecycle"
             docs:
