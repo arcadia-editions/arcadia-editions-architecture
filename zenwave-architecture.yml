@@ -95,7 +95,7 @@ domains:
                 releaseGroup: asyncapi-all
               - type: openapi
                 path: "openapi.yml"
-                version: "0.0.0"
+                version: "0.1.0"
             consumers:
               - "orders.checkout.orders-checkout#asyncapi-client"
               - "orders.checkout.orders-checkout#openapi"
