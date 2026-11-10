@@ -126,11 +126,11 @@ domains:
                 version: "0.0.0"
               - type: asyncapi
                 path: "asyncapi.yml"
-                version: "0.0.0"
+                version: "0.1.0"
                 releaseGroup: asyncapi-all
               - type: asyncapi-client
                 path: "asyncapi-client.yml"
-                version: "0.0.0"
+                version: "0.1.0"
                 releaseGroup: asyncapi-all
               - type: openapi
                 path: "openapi.yml"
