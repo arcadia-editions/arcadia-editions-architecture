@@ -241,7 +241,7 @@ domains:
             artifacts:
               - type: zdl
                 path: "domain-model.zdl"
-                version: "0.0.0"
+                version: "0.1.0"
               - type: asyncapi
                 path: "asyncapi.yml"
                 version: "0.0.0"
