@@ -231,7 +231,7 @@ domains:
           "notifications-consumer":
             id: "notifications.customer-communications.notifications-consumer"
             repository: "notifications-consumer-api"
-            version: "0.0.0"
+            version: "0.1.0"
             name: "Notifications Consumer"
             description: "Transforms business outcomes into customer-facing notifications and delivery results"
             docs:
