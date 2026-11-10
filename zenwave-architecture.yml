@@ -193,7 +193,7 @@ domains:
           "fulfillment-shipping":
             id: "fulfillment.shipping.fulfillment-shipping"
             repository: "fulfillment-shipping-api"
-            version: "0.0.0"
+            version: "0.1.0"
             name: "Fulfillment Shipping"
             description: "Owns scheduling and readiness of shipping operations after an order is confirmed"
             docs:
