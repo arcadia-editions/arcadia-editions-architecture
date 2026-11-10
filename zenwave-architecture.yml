@@ -64,7 +64,7 @@ domains:
                 releaseGroup: asyncapi-all
               - type: openapi
                 path: "openapi.yml"
-                version: "0.0.0"
+                version: "0.1.0"
 
       "inventory-management":
         id: "catalog.inventory-management"
