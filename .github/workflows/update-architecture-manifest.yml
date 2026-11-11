@@ -23,6 +23,19 @@ jobs:
       MANIFEST_PATH: zenwave-architecture.yml
       GH_TOKEN: ${{ secrets.ARCHITECTURE_RELEASE_TOKEN || github.token }}
     steps:
+      # Fail before the manifest is touched if the final step could not succeed.
+      - name: Verify downstream credentials
+        env:
+          EVENT_CATALOG_TOKEN: ${{ secrets.EVENT_CATALOG_TOKEN }}
+        shell: bash
+        run: |
+          [[ -n "$EVENT_CATALOG_TOKEN" ]] || { echo "::error::EVENT_CATALOG_TOKEN is not set"; exit 1; }
+          # Dry run: an event type the catalog workflow does not listen to. 204 proves the token can dispatch.
+          GH_TOKEN="$EVENT_CATALOG_TOKEN" gh api repos/arcadia-editions/arcadia-event-catalog/dispatches             -f event_type=preflight >/dev/null 2>&1 || {
+            echo "::error::EVENT_CATALOG_TOKEN cannot dispatch to arcadia-event-catalog (expired or insufficient scope). Nothing was changed; fix the secret and re-run."
+            exit 1
+          }
+
       - name: Validate dispatch payload
         shell: bash
         run: |
