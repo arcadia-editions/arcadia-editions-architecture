@@ -238,13 +238,12 @@ flow PlaceOrderFlow {
      * payment. We void the authorization rather than capturing and then
      * refunding — a void is cleaner, faster, and never appears as a charge
      * on the customer's statement.
-     * OrderCancelled is the safety net for any other cancellation, and
-     * OrderConfirmationRejected for an authorization that arrived after expiry.
-     * No-op when there is nothing to void: this ends the void > release > cancel > void loop.
+     * OrderConfirmationRejected voids an authorization that arrived after the
+     * order was cancelled or its stock released. No-op when there is nothing to void.
      * A refused void (PaymentVoidFailed) is left to ops; the order is cancelled anyway.
      */
     @compensates(authorizePayment)
-    when FulfillmentFailed, PaymentCaptureFailed, OrderCancelled, OrderConfirmationRejected do voidPayment {
+    when FulfillmentFailed, PaymentCaptureFailed, OrderConfirmationRejected do voidPayment {
         service PaymentsProcessing.PaymentsProcessingService
         @outcome(voided)
         emits PaymentVoided
@@ -257,8 +256,8 @@ flow PlaceOrderFlow {
      * retries were exhausted, or the authorization was voided (or the void was
      * refused) — the outcome is the same: stock goes back to the pool.
      * The type of the event that triggered this step sets the release reason.
-     * No-op, no event, when the stock is already RELEASED: this ends the
-     * void > release > cancel > void loop.
+     * No-op, no event, when the stock is already RELEASED (a late authorization
+     * voided after the timer released it): the order is cancelled only once.
      */
     @compensates(reserveStock)
     when PaymentDeclined, PaymentRetryExhausted, PaymentVoided, PaymentVoidFailed do releaseStock {
