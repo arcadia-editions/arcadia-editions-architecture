@@ -4,34 +4,34 @@ config {
 
 systems {
 
-    @zdl("orders-checkout-api/domain-model.zdl")
+    @zdl("../../orders-checkout-api/domain-model.zdl")
     OrdersCheckout {
         service OrdersCheckoutService {
             commands: startOrderCheckout, confirmOrder, cancelOrder
         }
     }
-    @zdl("catalog-inventory-api/domain-model.zdl")
+    @zdl("../../catalog-inventory-api/domain-model.zdl")
     CatalogInventory {
-        service InventoryService for(StockReservation) {
+        service InventoryService for (StockReservation) {
             commands: reserveStock, confirmStockReservation, releaseStock
         }
     }
 
-    @zdl("payments-processing-api/domain-model.zdl")
+    @zdl("../../payments-processing-api/domain-model.zdl")
     PaymentsProcessing {
         service PaymentsProcessingService {
-            commands: authorizePayment, retryPayment, capturePayment, voidPayment
+            commands: authorizePayment, reauthorizePayment, retryPayment, capturePayment, voidPayment
         }
     }
 
-    @zdl("fulfillment-shipping-api/domain-model.zdl")
+    @zdl("../../fulfillment-shipping-api/domain-model.zdl")
     FulfillmentShipping {
         service FulfillmentShippingService {
             commands: scheduleFulfillment
         }
     }
 
-    @zdl("notifications-consumer-api/domain-model.zdl")
+    @zdl("../../notifications-consumer-api/domain-model.zdl")
     NotificationsConsumer {
         service NotificationsConsumerService {
             commands: sendOrderConfirmation, sendStockUnavailableNotification, sendOrderCancelledNotification
@@ -118,8 +118,8 @@ flow PlaceOrderFlow {
     /**
      * A technical failure during authorization is eligible for retry. We attempt
      * again within the same reservation window. If all retry attempts are spent,
-     * PaymentRetryExhausted is emitsted and the order moves to cancellation.
-     * PaymentRetried feeds back into authorizePayment for the next attempt.
+     * PaymentRetryExhausted is emitted and the order moves to cancellation.
+     * PaymentRetried feeds back into reauthorizePayment for the next attempt.
      */
     when PaymentFailed do retryPayment {
         service PaymentsProcessing.PaymentsProcessingService
@@ -129,7 +129,7 @@ flow PlaceOrderFlow {
         emits PaymentRetryExhausted
     }
 
-    when PaymentRetried do authorizePayment {
+    when PaymentRetried do reauthorizePayment {
         service PaymentsProcessing.PaymentsProcessingService
         @outcome(authorized)
         emits PaymentAuthorized
