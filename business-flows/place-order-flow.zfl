@@ -4,34 +4,34 @@ config {
 
 systems {
 
-    @zdl("orders-checkout-api/domain-model.zdl")
+    @zdl("../../orders-checkout-api/domain-model.zdl")
     OrdersCheckout {
         service OrdersCheckoutService {
             commands: startOrderCheckout, confirmOrder, cancelOrder
         }
     }
-    @zdl("catalog-inventory-api/domain-model.zdl")
+    @zdl("../../catalog-inventory-api/domain-model.zdl")
     CatalogInventory {
-        service InventoryService for(StockReservation) {
-            commands: reserveStock, confirmStockReservation, releaseStock
+        service InventoryService for (StockReservation) {
+            commands: reserveStock, confirmStockReservation, releaseStock, expireReservation
         }
     }
 
-    @zdl("payments-processing-api/domain-model.zdl")
+    @zdl("../../payments-processing-api/domain-model.zdl")
     PaymentsProcessing {
         service PaymentsProcessingService {
-            commands: authorizePayment, retryPayment, capturePayment, voidPayment
+            commands: authorizePayment, reauthorizePayment, retryPayment, capturePayment, voidPayment, getPaymentStatus
         }
     }
 
-    @zdl("fulfillment-shipping-api/domain-model.zdl")
+    @zdl("../../fulfillment-shipping-api/domain-model.zdl")
     FulfillmentShipping {
         service FulfillmentShippingService {
-            commands: scheduleFulfillment
+            commands: scheduleFulfillment, recordPaymentCaptured, cancelFulfillment
         }
     }
 
-    @zdl("notifications-consumer-api/domain-model.zdl")
+    @zdl("../../notifications-consumer-api/domain-model.zdl")
     NotificationsConsumer {
         service NotificationsConsumerService {
             commands: sendOrderConfirmation, sendStockUnavailableNotification, sendOrderCancelledNotification
@@ -50,24 +50,30 @@ systems {
  * is the binding constraint. We hold the item first and charge second.
  *
  * Payment runs in two phases. Authorization at checkout places a hold on the
- * customer's funds without moving money. Capture happens later, at fulfillment
- * time, when the order is physically ready to ship. If fulfillment fails after
+ * customer's funds without moving money. Capture happens later, as soon as
+ * fulfillment is scheduled (FulfillmentScheduled); the warehouse may mark the
+ * order ready to ship only after capture. If fulfillment fails after
  * authorization but before capture, the hold is voided — no charge ever appears
  * on the customer's statement.
  *
- * Transient payment errors are retried within the reservation window. A hard
+ * Transient payment errors are retried a bounded number of times. A hard
  * decline from the processor is not retried — it goes straight to cancellation.
  *
- * Reservation expiry is owned by the Scheduler, not the payment service. If
- * payment is not resolved within ten minutes of the order being created, the
- * Scheduler fires ReservationExpired and the stock is returned to the pool.
+ * Reservation expiry is owned by the Scheduler. If payment has not started ten
+ * minutes after the order was created, the stock is returned to the pool. Once
+ * payment has started, payment owns the end: at most 3 attempts of at most
+ * 30 seconds each, with 5 and 15 seconds of backoff between them.
+ *
+ * Redelivery: every policy is a no-op, with no event, when the aggregate is
+ * already in a target state of that command.
  */
 flow PlaceOrderFlow {
 
     /**
      * The customer submits their intent to purchase. This is the command that
-     * opens the flow. No stock is touched and no order record exists yet.
-     * The system acknowledges the request by emitsting OrderRequested.
+     * opens the flow. Stock is reserved first. The Order is persisted only when
+     * the stock is reserved (OrderCreated); otherwise the customer gets 409
+     * (StockUnavailable) and no order record is created.
      */
     @actor(Customer)
     start StartOrderCheckout {
@@ -103,7 +109,7 @@ flow PlaceOrderFlow {
      * are reserved at the processor but not yet transferred to us. A decline
      * means the processor rejected the card outright and we will not retry —
      * the customer needs to act. A failure means a technical error on our side
-     * or the processor's, which we will retry within the reservation window.
+     * or the processor's, which we will retry a bounded number of times.
      */
     when OrderCreated do authorizePayment {
         service PaymentsProcessing.PaymentsProcessingService
@@ -116,10 +122,10 @@ flow PlaceOrderFlow {
     }
 
     /**
-     * A technical failure during authorization is eligible for retry. We attempt
-     * again within the same reservation window. If all retry attempts are spent,
-     * PaymentRetryExhausted is emitsted and the order moves to cancellation.
-     * PaymentRetried feeds back into authorizePayment for the next attempt.
+     * A technical failure during authorization is eligible for retry: at most 3
+     * attempts in all, 5 and 15 seconds apart. If all retry attempts are spent,
+     * PaymentRetryExhausted is emitted and the order moves to cancellation.
+     * PaymentRetried feeds back into reauthorizePayment for the next attempt.
      */
     when PaymentFailed do retryPayment {
         service PaymentsProcessing.PaymentsProcessingService
@@ -129,32 +135,44 @@ flow PlaceOrderFlow {
         emits PaymentRetryExhausted
     }
 
-    when PaymentRetried do authorizePayment {
+    when PaymentRetried do reauthorizePayment {
         service PaymentsProcessing.PaymentsProcessingService
         @outcome(authorized)
         emits PaymentAuthorized
         @outcome(declined)
         emits PaymentDeclined
-        @outcome(failed)
+        @failure @outcome(failed)
         emits PaymentFailed
     }
 
     /**
      * Authorization succeeded. We update the order status so the rest of the
      * system knows this order is payment-backed and ready for fulfillment.
+     * An authorization that arrives for a cancelled order, or after the timer
+     * released the stock, is rejected: OrderConfirmationRejected asks payments
+     * to void it.
      */
     when PaymentAuthorized do confirmOrder {
         service OrdersCheckout.OrdersCheckoutService
         call confirmStockReservation
+        @outcome("stock-not-held")
+        on StockReservationNotHeldResult emits OrderConfirmationRejected
+        @outcome(confirmed)
         emits OrderConfirmed
+        @outcome("order-cancelled")
+        emits OrderConfirmationRejected
     }
 
     /**
-     * Stock Reservation is confirmed
+     * Stock Reservation is confirmed. NOT_HELD when some line is no longer
+     * RESERVED. StockReservationConfirmed is published on purpose; no step of
+     * this flow consumes it.
      */
     do confirmStockReservation {
         service CatalogInventory.InventoryService
         emits StockReservationConfirmed
+        response StockReservationConfirmedResult
+        response StockReservationNotHeldResult
     }
 
     /**
@@ -171,9 +189,9 @@ flow PlaceOrderFlow {
 
     /**
      * Money moves here, not at checkout. We capture the authorization hold
-     * only when the order is physically ready to leave our warehouse. If capture
-     * fails at this point, we treat it the same as a fulfillment failure and
-     * void the authorization.
+     * once fulfillment is scheduled, before the order is ready to ship. If capture
+     * fails, we void the authorization; the cancellation that follows also
+     * cancels the fulfillment.
      */
     when FulfillmentScheduled do capturePayment {
         service PaymentsProcessing.PaymentsProcessingService
@@ -188,7 +206,18 @@ flow PlaceOrderFlow {
      */
     when PaymentCaptured do sendOrderConfirmation {
         service NotificationsConsumer.NotificationsConsumerService
+        @outcome(sent)
         emits OrderConfirmationSent
+        @failure @outcome(failed)
+        emits NotificationDeliveryFailed
+    }
+
+    /**
+     * Capture succeeded: the warehouse may now mark the order ready to ship.
+     * markReadyToShip is refused until this is recorded.
+     */
+    when PaymentCaptured do recordPaymentCaptured {
+        service FulfillmentShipping.FulfillmentShippingService
     }
 
     /**
@@ -198,7 +227,10 @@ flow PlaceOrderFlow {
      */
     when StockUnavailable do sendStockUnavailableNotification {
         service NotificationsConsumer.NotificationsConsumerService
+        @outcome(sent)
         emits StockUnavailableNotificationSent
+        @failure @outcome(failed)
+        emits NotificationDeliveryFailed
     }
 
     /**
@@ -206,42 +238,69 @@ flow PlaceOrderFlow {
      * payment. We void the authorization rather than capturing and then
      * refunding — a void is cleaner, faster, and never appears as a charge
      * on the customer's statement.
+     * OrderConfirmationRejected voids an authorization that arrived after the
+     * order was cancelled or its stock released. No-op when there is nothing to void.
+     * A refused void (PaymentVoidFailed) is left to ops; the order is cancelled anyway.
      */
     @compensates(authorizePayment)
-    when FulfillmentFailed, PaymentCaptureFailed do voidPayment {
+    when FulfillmentFailed, PaymentCaptureFailed, OrderConfirmationRejected do voidPayment {
         service PaymentsProcessing.PaymentsProcessingService
+        @outcome(voided)
         emits PaymentVoided
+        @failure @outcome("void-failed")
+        emits PaymentVoidFailed
     }
 
     /**
-     * All terminal failure paths converge here. Whether payment was declined,
-     * retries were exhausted, the authorization was voided, or the reservation
-     * window expired — the outcome is the same: stock goes back to the pool.
-     * The emits that triggered this step carries the reason; this operation
-     * does not need to know it.
+     * All payment failure paths converge here. Whether payment was declined,
+     * retries were exhausted, or the authorization was voided (or the void was
+     * refused) — the outcome is the same: stock goes back to the pool.
+     * The type of the event that triggered this step sets the release reason.
+     * No-op, no event, when the stock is already RELEASED (a late authorization
+     * voided after the timer released it): the order is cancelled only once.
      */
     @compensates(reserveStock)
-    when PaymentDeclined, PaymentRetryExhausted, PaymentVoided, ReservationExpired do releaseStock {
+    when PaymentDeclined, PaymentRetryExhausted, PaymentVoided, PaymentVoidFailed do releaseStock {
         service CatalogInventory.InventoryService
         emits StockReleased
     }
 
     /**
-     * If payment is not resolved within ten minutes of the order being created,
-     * the Scheduler releases the reservation automatically. This protects
-     * inventory from being locked indefinitely by abandoned or stalled checkouts.
-     * The timer stops as soon as payment reaches any terminal state.
+     * Ten minutes after the order is created, the Scheduler asks payments whether
+     * payment has started. If nothing has started (the checkout stalled before
+     * payment), the reservation is released. If payment has started, even with a
+     * first call still in flight, payment owns the end and the timer does nothing.
      */
     @actor(Scheduler)
-    @time("10 minutes after OrderCreated and not PaymentAuthorized or PaymentDeclined or PaymentRetryExhausted")
+    @time("10 minutes after OrderCreated")
     start ReservationExpired {
         orderId String
     }
 
     /**
+     * Releases the RESERVED lines (RESERVATION_EXPIRED) only on NoPaymentResult.
+     * PaymentStartedResult is not handled: the step ends and payment owns the end.
+     * No-op, no event, when no line is RESERVED (late fire).
+     */
+    @compensates(reserveStock)
+    when ReservationExpired do expireReservation {
+        service CatalogInventory.InventoryService
+        call getPaymentStatus
+        @outcome(expired)
+        on NoPaymentResult emits StockReleased
+    }
+
+    do getPaymentStatus {
+        service PaymentsProcessing.PaymentsProcessingService
+        response NoPaymentResult
+        response PaymentStartedResult
+    }
+
+    /**
      * Once stock is released, the order has no inventory backing it and must
      * be cancelled. OrdersCheckout is the single owner of this transition —
-     * no other part of the system should emits OrderCancelled directly.
+     * no other part of the system should emit OrderCancelled directly.
+     * No-op, no event, when the order is already CANCELLED.
      */
     @compensates(startOrderCheckout)
     when StockReleased do cancelOrder {
@@ -250,18 +309,38 @@ flow PlaceOrderFlow {
     }
 
     /**
+     * A cancelled order may already have a fulfillment (capture failed, void refused).
+     * We stop the warehouse. No-op when there is no Fulfillment, or it is FAILED or
+     * CANCELLED. FulfillmentCancelled is published for the warehouse.
+     */
+    @compensates(scheduleFulfillment)
+    when OrderCancelled do cancelFulfillment {
+        service FulfillmentShipping.FulfillmentShippingService
+        emits FulfillmentCancelled
+    }
+
+    /**
      * The customer is informed that their order has been cancelled and why.
-     * At this point the reservation is gone, the order is closed, and no
-     * payment was taken.
+     * At this point the reservation is gone and the order is closed. No payment
+     * was captured; when the void was refused (PAYMENT_VOID_FAILED) the hold may
+     * still show until ops release it, and the message must say so.
      */
     when OrderCancelled do sendOrderCancelledNotification {
         service NotificationsConsumer.NotificationsConsumerService
+        @outcome(sent)
         emits OrderCancelledNotificationSent
+        @failure @outcome(failed)
+        emits NotificationDeliveryFailed
     }
 
+    /**
+     * notificationFailed hides the business outcome: NotificationDeliveryFailed.type
+     * says which one (ORDER_CONFIRMATION, STOCK_UNAVAILABLE, ORDER_CANCELLED).
+     */
     end {
         completed: OrderConfirmationSent
         stockGone: StockUnavailableNotificationSent
         orderCancelled: OrderCancelledNotificationSent
+        notificationFailed: NotificationDeliveryFailed
     }
 }
