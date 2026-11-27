@@ -5,6 +5,8 @@ config:
   version: 0.0.1
   groupIdExpression: "com.arcadiaeditions.${owner.id}"
   artifactIdExpression: "${artifact.fileNameWithoutExtension}"
+  properties:
+    docsReleaseGroup: service-all
   contentResolution:
     - workspace
     - git
@@ -14,7 +16,7 @@ config:
     git:
       provider: github
       server: "https://github.com"
-      contentUrlExpression: "${server}/arcadia-editions/${owner.repository}/raw/main/${content.path}"
+      contentUrlExpression: "${server}/arcadia-editions/${owner.repository}/raw/release/${artifact.releaseGroup|artifact.type|docsReleaseGroup}/v${version}/${content.path}"
 
 domains:
   "architecture":
@@ -54,6 +56,7 @@ domains:
               - type: zdl
                 path: "domain-model.zdl"
                 version: "0.1.0"
+                releaseGroup: domain-model
               - type: asyncapi
                 path: "asyncapi.yml"
                 version: "0.1.0"
@@ -85,6 +88,7 @@ domains:
               - type: zdl
                 path: "domain-model.zdl"
                 version: "0.2.1"
+                releaseGroup: domain-model
               - type: asyncapi
                 path: "asyncapi.yml"
                 version: "0.2.1"
@@ -124,6 +128,7 @@ domains:
               - type: zdl
                 path: "domain-model.zdl"
                 version: "0.2.0"
+                releaseGroup: domain-model
               - type: asyncapi
                 path: "asyncapi.yml"
                 version: "0.2.0"
@@ -164,6 +169,7 @@ domains:
               - type: zdl
                 path: "domain-model.zdl"
                 version: "0.2.2"
+                releaseGroup: domain-model
               - type: asyncapi
                 path: "asyncapi.yml"
                 version: "0.2.2"
@@ -204,6 +210,7 @@ domains:
               - type: zdl
                 path: "domain-model.zdl"
                 version: "0.2.0"
+                releaseGroup: domain-model
               - type: asyncapi
                 path: "asyncapi.yml"
                 version: "0.2.0"
@@ -242,6 +249,7 @@ domains:
               - type: zdl
                 path: "domain-model.zdl"
                 version: "0.2.0"
+                releaseGroup: domain-model
               - type: asyncapi
                 path: "asyncapi.yml"
                 version: "0.2.0"
@@ -275,22 +283,29 @@ domains:
             artifacts:
               - type: zdl
                 path: "catalog-inventory-domain-model.zdl"
-                version: "0.0.0"
+                version: "0.10.3"
+                releaseGroup: service-all
               - type: zdl
                 path: "catalog-products-domain-model.zdl"
-                version: "0.0.0"
+                version: "0.10.3"
+                releaseGroup: service-all
               - type: zdl
                 path: "fulfillment-shipping-domain-model.zdl"
-                version: "0.0.0"
+                version: "0.10.3"
+                releaseGroup: service-all
               - type: zdl
                 path: "notifications-consumer-domain-model.zdl"
-                version: "0.0.0"
+                version: "0.10.3"
+                releaseGroup: service-all
               - type: zdl
                 path: "orders-checkout-domain-model.zdl"
-                version: "0.0.0"
+                version: "0.10.3"
+                releaseGroup: service-all
               - type: openapi
                 path: "orders-checkout-openapi.yml"
-                version: "0.0.0"
+                version: "0.10.3"
+                releaseGroup: service-all
               - type: zdl
                 path: "payments-processing-domain-model.zdl"
-                version: "0.0.0"
+                version: "0.10.3"
+                releaseGroup: service-all
